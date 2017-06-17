@@ -1,0 +1,42 @@
+#!/bin/zsh
+ME=$(basename $0)
+USAGE="usage: ${me} [-d CVSROOT-pathonly] [basedir]"
+CVSROOT=${CVSROOT:-${HOME}/cvs}
+BASEDIR=
+
+while getopts d: c
+do
+	case "${c}" in
+	d)	CVSROOT="${OPTARG}";;
+	*)	echo "${USAGE}" >&2; exit 1;;
+	esac
+done
+shift $(expr ${OPTIND} - 1)
+case "${CVSROOT}" in
+	*:* | *@* )
+		echo "${USAGE}" >&2
+		exit 1
+esac
+if [ $# -ge 1 ]; then
+	BASEDIR="${1}"
+	shift
+fi
+if [ $# -ne 0 ]; then
+	echo "${USAGE}" >&2
+	exit 1
+fi
+if [ "${BASEDIR}" ]; then
+	mkdir -p "${BASEDIR}" || (
+		echo "${ME}: could not create ${BASEDIR}" >&2
+		exit 1
+	)
+fi
+for d in $(/bin/ls -1 ${CVSROOT})
+do
+	echo "${d}"
+	(
+		cd "${BASEDIR}"
+		rm -rf "${d}"
+		cvs -d "${CVSROOT}" co "${d}"
+	)
+done
